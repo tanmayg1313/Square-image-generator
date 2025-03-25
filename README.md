@@ -2,6 +2,8 @@
 
 A modern web application that converts any image to a square (1:1) format by adding customizable borders. Perfect for platforms requiring square images such as Instagram profile pictures or thumbnails.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - Drag and drop image upload
