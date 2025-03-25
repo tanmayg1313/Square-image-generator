@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Square Image Converter
 
-## Getting Started
+A modern web application that converts any image to a square (1:1) format by adding customizable borders. Perfect for platforms requiring square images such as Instagram profile pictures or thumbnails.
 
-First, run the development server:
+## Features
+
+- Drag and drop image upload
+- Live preview of original image
+- Customizable border color
+- One-click conversion to square format
+- Easy download of the resulting square image
+- Responsive design for desktop and mobile use
+- Dark/light mode support
+
+## Technology Stack
+
+- Next.js 14
+- TypeScript
+- React Dropzone for file uploads
+- HTML5 Canvas for image manipulation
+- TailwindCSS for modern styling
+
+## Running the Project
+
+To run the project locally:
 
 ```bash
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app uses HTML5 Canvas to:
+1. Take any rectangular image
+2. Create a square canvas with the size of the original image's largest dimension
+3. Fill the canvas with the selected border color
+4. Place the original image centered on the canvas
+5. Convert the result to a downloadable PNG file
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

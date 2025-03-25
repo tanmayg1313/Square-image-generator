@@ -1,103 +1,199 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useDropzone } from 'react-dropzone';
+import Image from 'next/image';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [borderColor, setBorderColor] = useState<string>('#FFFFFF'); // Default white
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles && acceptedFiles.length > 0) {
+      const selectedFile = acceptedFiles[0];
+      setFile(selectedFile);
+      
+      // Create preview
+      const objectUrl = URL.createObjectURL(selectedFile);
+      setPreview(objectUrl);
+      
+      // Reset result
+      setResult(null);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': []
+    },
+    maxFiles: 1
+  });
+
+  const convertToSquare = useCallback(() => {
+    if (!file || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const img = new window.Image();
+    img.onload = () => {
+      // Determine the final size (take the larger dimension)
+      const size = Math.max(img.width, img.height);
+      
+      // Set canvas size to the square dimensions
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Fill with selected border color
+      ctx.fillStyle = borderColor;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Calculate position to center the image
+      const x = (size - img.width) / 2;
+      const y = (size - img.height) / 2;
+      
+      // Draw the image centered
+      ctx.drawImage(img, x, y, img.width, img.height);
+      
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL('image/png');
+      setResult(dataUrl);
+    };
+    
+    img.src = URL.createObjectURL(file);
+  }, [file, borderColor]);
+
+  const downloadImage = () => {
+    if (!result) return;
+    
+    const link = document.createElement('a');
+    link.href = result;
+    link.download = `square-${file?.name || 'image'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white mb-2">Square Image Converter</h1>
+          <p className="text-gray-600 dark:text-gray-300">Convert any image to a perfect 1:1 square format with customizable borders</p>
+        </header>
+
+        <div className="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 sm:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Upload Image</h2>
+              
+              <div 
+                {...getRootProps()} 
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragActive 
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                    : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                }`}
+              >
+                <input {...getInputProps()} />
+                <div className="flex flex-col items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {isDragActive ? (
+                    <p className="text-blue-500 font-medium">Drop your image here</p>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Drag & drop an image here, or click to select
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {preview && (
+                <div className="mt-6">
+                  <h3 className="text-md font-medium mb-2 text-gray-700 dark:text-gray-300">Original Image</h3>
+                  <div className="relative h-48 sm:h-64 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img 
+                      src={preview} 
+                      alt="Preview" 
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <h3 className="text-md font-medium mb-2 text-gray-700 dark:text-gray-300">Border Color</h3>
+                <div className="flex items-center space-x-3">
+                  <input 
+                    type="color" 
+                    value={borderColor}
+                    onChange={(e) => setBorderColor(e.target.value)}
+                    className="h-10 w-10 rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{borderColor}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={convertToSquare}
+                disabled={!file}
+                className="mt-6 w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Convert to Square
+              </button>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Result</h2>
+              
+              {result ? (
+                <>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img 
+                      src={result} 
+                      alt="Result" 
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <button
+                    onClick={downloadImage}
+                    className="mt-4 w-full py-2.5 px-4 bg-green-600 text-white rounded-lg font-medium transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  >
+                    Download
+                  </button>
+                </>
+              ) : (
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 h-64 flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400 text-center">
+                    {file ? 'Click "Convert to Square" to see the result' : 'Upload an image to get started'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <footer className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>Square Image Converter - Create perfect square images with custom borders</p>
+        </footer>
+      </div>
+      
+      {/* Hidden canvas used for image processing */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
 }
